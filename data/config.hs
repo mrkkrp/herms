@@ -11,5 +11,10 @@ ConfigInfo
 -- Recipes file name relative to the user's XDG data dir, generally
 -- ~/.local/share/herms on Linux systems. Default is "recipes.yaml".
 , recipesFile = "recipes.yaml"
+
+-- Pantry file name relative to the user's XDG data dir, generally
+-- ~/.local/share/herms on Linux systems. Default is "pantry.herms".
+, pantryFile = "pantry.yaml"
+
 , language = "english"
 }
