@@ -357,6 +357,11 @@ shop targets serv = do
   liftIO $ forM_ (sort . subtractIngredients pantry $ ingrts) $ \ingr ->
     putStrLn $ showIngredient 1 ingr
 
+pantry :: HermsReader IO ()
+pantry = do
+  (_, _, pantry) <- ask
+  liftIO $ mapM_ (putStrLn . showIngredient 1) pantry
+
 printDataDir :: HermsReader IO ()
 printDataDir = do
   (config, _, _) <- ask
@@ -387,6 +392,7 @@ runWithOpts (View targets serving step conversion)  = if step
                                                       then viewByStep targets serving conversion
                                                       else view targets serving conversion
 runWithOpts (Shop targets serving)                  = shop targets serving
+runWithOpts Pantry                                  = pantry
 runWithOpts DataDir                                 = printDataDir
 
 
@@ -395,15 +401,17 @@ runWithOpts DataDir                                 = printDataDir
 ------------------------------
 
 -- | 'Command' data type represents commands of CLI
-data Command = List   [String] Bool Bool         -- ^ shows recipes
-             | View   [String] Int Bool String   -- ^ shows specified recipes with given serving
-             | Add                               -- ^ adds the recipe (interactively)
-             | Edit   String                     -- ^ edits the recipe
-             | Import String String              -- ^ imports a recipe file
-             | Export [String] String            -- ^ exports recipes to stdout
-             | Remove [String]                   -- ^ removes specified recipes
-             | Shop   [String] Int               -- ^ generates the shopping list for given recipes
-             | DataDir                           -- ^ prints the directories of recipe file and config.hs
+data Command =
+    List   [String] Bool Bool         -- ^ shows recipes
+  | View   [String] Int Bool String   -- ^ shows specified recipes with given serving
+  | Add                               -- ^ adds the recipe (interactively)
+  | Edit   String                    -- ^ edits the recipe
+  | Import String String              -- ^ imports a recipe file
+  | Export [String] String            -- ^ exports recipes to stdout
+  | Remove [String]                   -- ^ removes specified recipes
+  | Shop   [String] Int               -- ^ generates the shopping list for given recipes
+  | Pantry                            -- ^ edit the pantry
+  | DataDir                           -- ^ prints the directories of recipe file and config.hs
 
 listP, addP, viewP, editP, importP, exportP, removeP, shopP, dataDirP :: Translator -> Parser Command
 listP    t = List   <$> (words <$> tagsP t) <*> groupByTagsP t <*> nameOnlyP t
@@ -414,6 +422,7 @@ exportP  t = Export <$> severalRecipesP t <*> formatP t
 removeP  t = Remove <$> severalRecipesP t
 viewP    t = View   <$> severalRecipesP t <*> servingP t <*> stepP t <*> conversionP t
 shopP    t = Shop   <$> severalRecipesP t <*> servingP t
+pantryP  _ = pure Pantry
 dataDirP _ = pure DataDir
 
 -- | @groupByTagsP is flag for grouping recipes by tags
@@ -517,6 +526,9 @@ optP t = subparser
      <> command (t Str.shopping)
                 (info (helper <*> shopP t)
                       (progDesc (t Str.shoppingDesc)))
+     <> command (t Str.pantry)
+                (info (helper <*> pantryP t)
+                      (progDesc (t Str.pantryDesc)))
      <> command (t Str.datadir)
                 (info (helper <*> dataDirP t)
                       (progDesc (t Str.datadirDesc)))

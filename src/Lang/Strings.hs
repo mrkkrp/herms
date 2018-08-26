@@ -134,6 +134,9 @@ removeDesc = "remove the particular recipes"
 shopping     = "shopping"
 shoppingDesc = "generate a shopping list for given recipes"
 
+pantry     = "pantry"
+pantryDesc = "view and edit the list of ingredients you have"
+
 datadir     = "datadir"
 datadirDesc = "show locations of recipe and config files"
 
