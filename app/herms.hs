@@ -38,7 +38,11 @@ import qualified Lang.Strings as Str
 versionStr :: String
 versionStr = "1.9.0.4"
 
-type HermsReader = ReaderT (Config, RecipeBook)
+-- | @HermsReader@ is the environment available to herms commands.
+--
+-- It consists of the contents of the configuration file, the
+-- available recipes, and the ingredients the user has.
+type HermsReader = ReaderT (Config, RecipeBook, [Ingredient])
 
 -- | @getRecipeBookWith reads in recipe book with already read-in config
 --
@@ -58,6 +62,12 @@ getRecipeBookWith config = do
           in putStrLn ("You are using a deprecated recipe format. See " ++ u) >>
              pure (Right recipes)
 
+-- | @getPantryFileWith reads the list of already-owned ingredients
+getPantryFileWith :: Config -> IO (Either Yaml.ParseException [Ingredient])
+getPantryFileWith config = do
+  content <- readFileOrDefault "pantry.yaml" (pantryFile' config)
+  pure $ Yaml.decodeEither' content
+
 getRecipe :: String -> [Recipe] -> Maybe Recipe
 getRecipe target = listToMaybe . filter ((target ==) . recipeName)
 
@@ -65,7 +75,7 @@ saveOrDiscard :: [[String]]   -- input for the new recipe
               -> Maybe Recipe -- maybe an original recipe prior to any editing
               -> HermsReader IO ()
 saveOrDiscard input oldRecp = do
-  (config, recipeBook) <- ask
+  (config, recipeBook, _) <- ask
   let t = translator config
   let newRecipe = readRecipe input
   liftIO $ putTextLn $ showRecipe t newRecipe Nothing
@@ -90,13 +100,13 @@ saveOrDiscard input oldRecp = do
 
 add :: HermsReader IO ()
 add = do
-  (config, _) <- ask
+  (config, _, _) <- ask
   input <- liftIO $ getAddInput (translator config)
   saveOrDiscard input Nothing
 
 doEdit :: Recipe -> Maybe Recipe -> HermsReader IO ()
 doEdit recp origRecp = do
-  (config, _) <- ask
+  (config, _, _) <- ask
   input <- liftIO $ getEdit (translator config) (recipeName recp) (description recp) serving amounts units ingrs attrs dirs tag
   saveOrDiscard input origRecp
   where serving  = show $ servingSize recp
@@ -111,7 +121,7 @@ doEdit recp origRecp = do
 
 edit :: String -> HermsReader IO ()
 edit target = do
-  (config, recipeBook) <- ask
+  (config, recipeBook, _) <- ask
   let t = translator config
   case readRecipeRef target recipeBook of
     Nothing   -> liftIO $ putStrLn $ target ++ t Str.doesNotExist
@@ -128,7 +138,7 @@ readRecipeRef target recipeBook =
 
 importFile :: String -> String -> HermsReader IO ()
 importFile target format = do
-  (config, recipeBook) <- ask
+  (config, recipeBook, _) <- ask
   let t = translator config
 
   -- Read the new recipe book from the filesystem
@@ -171,7 +181,7 @@ readFormat t other  =
 
 export :: [String] -> String -> HermsReader IO ()
 export targets format = do
-  (config, recipeBook) <- ask
+  (config, recipeBook, _) <- ask
   let t = translator config
   fmt <- liftIO $ readFormat t format
   -- TODO: error message should say /which/ recipe doesn't exist
@@ -198,7 +208,7 @@ getServingsAndConv serv convName config = (servings, conv)
 
 view :: [String] -> Int -> String -> HermsReader IO ()
 view targets serv convName = do
-  (config, recipeBook) <- ask
+  (config, recipeBook, _) <- ask
   let t = translator config
   let (servings, conv) = getServingsAndConv serv convName config
   liftIO $ forM_ targets $ \ target ->
@@ -208,7 +218,7 @@ view targets serv convName = do
 
 viewByStep :: [String] -> Int -> String -> HermsReader IO ()
 viewByStep targets serv convName = do
-  (config, recipeBook) <- ask
+  (config, recipeBook, _) <- ask
   let t = translator config
   let (servings, conv) = getServingsAndConv serv convName config
   liftIO $ hSetBuffering stdout NoBuffering
@@ -218,7 +228,7 @@ viewByStep targets serv convName = do
 
 viewRecipeByStep :: Recipe -> Maybe Int -> HermsReader IO ()
 viewRecipeByStep recp servings = do
-  (config, _) <- ask
+  (config, _, _) <- ask
   let t = translator config
   liftIO $ putText $ showRecipeHeader t recp servings
   let steps = showRecipeSteps recp
@@ -229,7 +239,7 @@ viewRecipeByStep recp servings = do
 
 list :: [String] -> Bool -> Bool -> HermsReader IO ()
 list inputTags groupByTags nameOnly = do
-  (_, recipes) <- ask
+  (_, recipes, _) <- ask
   let recipesWithIndex = zip [1..] recipes
   let targetRecipes    = filterByTags inputTags recipesWithIndex
   if groupByTags
@@ -244,7 +254,7 @@ filterByTags inputTags = filter (inTags . tags . snd)
 
 listDefault :: Bool -> [(Int, Recipe)] -> HermsReader IO ()
 listDefault nameOnly (unzip -> (indices, recipes)) = do
-  (config, _) <- ask
+  (config, _, _) <- ask
   let recipeList = map (showRecipeInfo (translator config)) recipes
       size       = length $ show $ length recipeList
       strIndices = map (padLeft size . show) indices
@@ -254,7 +264,7 @@ listDefault nameOnly (unzip -> (indices, recipes)) = do
 
 listByTags :: Bool -> [String] -> [(Int, Recipe)] -> HermsReader IO ()
 listByTags nameOnly inputTags recipesWithIdx = do
-  (config, _) <- ask
+  (config, _, _) <- ask
   let tagsRecipes :: [[(String, (Int, Recipe))]]
       tagsRecipes =
         groupBy ((==) `on` fst) $ sortBy (compare `on` fst) $
@@ -302,7 +312,7 @@ replaceDataFile fileName str = do
 
 replaceRecipeBook :: RecipeBook -> HermsReader IO ()
 replaceRecipeBook newBook = do
-  (config, _) <- ask
+  (config, _, _) <- ask
   liftIO $ replaceDataFile (recipesFile' config) (Yaml.encode newBook)
 
 -- | @removeWithVerbosity v recipes@ deletes the @recipes@ from the
@@ -311,7 +321,7 @@ replaceRecipeBook newBook = do
 
 removeWithVerbosity :: Bool -> [String] -> HermsReader IO ()
 removeWithVerbosity v targets = do
-  (config, recipeBook) <- ask
+  (config, recipeBook, _) <- ask
   let t = translator config
   mrecipes   <- liftIO $ forM targets $ \ target -> do
     -- Resolve the recipes all at once; this way if we remove multiple
@@ -334,7 +344,7 @@ removeSilent = removeWithVerbosity False
 
 shop :: [String] -> Int -> HermsReader IO ()
 shop targets serv = do
-  (_, recipeBook) <- ask
+  (_, recipeBook, pantry) <- ask
   let getFactor recp
         | serv == 0 = servingSize recp % 1
         | otherwise = serv % 1
@@ -344,12 +354,12 @@ shop targets serv = do
             Nothing   -> []
             Just recp -> adjustIngredients (getFactor recp) $ ingredients recp)
                   targets
-  liftIO $ forM_ (sort . combineIngredients $ ingrts) $ \ingr ->
+  liftIO $ forM_ (sort . subtractIngredients pantry $ ingrts) $ \ingr ->
     putStrLn $ showIngredient 1 ingr
 
 printDataDir :: HermsReader IO ()
 printDataDir = do
-  (config, _) <- ask
+  (config, _, _) <- ask
   liftIO $ mapM_ (putStrLn . cleanDirPath) [dataDir config, configDir config]
   where cleanDirPath = (++ "/") . filter (/= '\"')
 
@@ -357,11 +367,13 @@ main :: IO ()
 main = do
   config     <- getConfig
   recipeBook <- getRecipeBookWith config
+  pantry     <- getPantryFileWith config
   command    <- execParser (commandPI (translator config))
-  case recipeBook of
-    Left e -> putStrLn $ "Couldn't read recipes: " ++ (show e)
-    Right recipeBook' ->
-      runReaderT (runWithOpts command) (config, recipeBook')
+  case (recipeBook, pantry) of
+    (Left e, _) -> putStrLn $ "Couldn't read recipes: " ++ (show e)
+    (_, Left e) -> putStrLn $ "Couldn't read pantry: " ++ (show e)
+    (Right recipeBook', Right pantry') ->
+      runReaderT (runWithOpts command) (config, recipeBook', pantry')
 
 -- @runWithOpts runs the action of selected command.
 runWithOpts :: Command -> HermsReader IO ()

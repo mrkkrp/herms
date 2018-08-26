@@ -24,4 +24,24 @@ tests = testGroup "Utils"
         \i -> ([i] == combineIngredients [i])
     , testProperty "combineIngredientsUniform" $
         \i n -> (n >= 1) ==> (1 == length (combineIngredients (take n (repeat i))))
+
+    -- subtractIngredient
+
+    , testProperty "subtractIngredientLess" $
+        \x l -> length (subtractIngredient x l) <= length l
+    , testProperty "subtractIngredientNil" $
+        \x -> subtractIngredient x [] == []
+    , testProperty "subtractIngredientCons" $
+        \x l -> subtractIngredient x (x : l) == l
+
+    -- subtractIngredients
+
+    , testProperty "subtractIngredientsLess" $
+        \l1 l2 -> length (subtractIngredients l1 l2) <= length l2
+    , testProperty "subtractIngredientsNilRight" $
+        \l -> subtractIngredients l [] == []
+    , testProperty "subtractIngredientsNilLeft" $
+        \l -> subtractIngredients [] l == l
+    , testProperty "subtractIngredientsCons" $
+        \x l1 l2 -> subtractIngredients (x : l1) (x : l2) == subtractIngredients l1 l2
     ]

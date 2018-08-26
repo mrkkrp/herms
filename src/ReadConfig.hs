@@ -29,6 +29,7 @@ data ConfigInfo = ConfigInfo
   { defaultUnit           :: Conversion
   , defaultServingSize    :: Int
   , recipesFile           :: String
+  , pantryFile            :: String
   , language              :: String
   } deriving (Read, Show)
 
@@ -38,6 +39,7 @@ data Config = Config
   , dataDir             :: String
   , configDir           :: String
   , recipesFile'        :: String
+  , pantryFile'         :: String
   , translator          :: String -> String
   }
 
@@ -127,6 +129,7 @@ processConfig dataDir configDir raw = Config
   { defaultUnit'        = defaultUnit raw
   , defaultServingSize' = defaultServingSize raw
   , recipesFile'        = dataDir </> recipesFile raw
+  , pantryFile'         = dataDir </> pantryFile raw
   , translator          = getTranslator $ getLang raw
   , dataDir             = dataDir
   , configDir           = configDir

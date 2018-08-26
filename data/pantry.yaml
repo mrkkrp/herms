@@ -1,0 +1,10 @@
+---
+- name: milk
+  attribute: ""
+  quantity: 1/1
+  unit: gallon
+
+# Ingredient {quantity = 0 % 1, unit = Other "", ingredientName = "salt", attribute = ""}
+# Ingredient {quantity = 0 % 1, unit = Other "", ingredientName = "black pepper", attribute = ""}
+# Ingredient {quantity = 4 % 1, unit = Cup, ingredientName = "olive oil", attribute = ""}
+# Ingredient {quantity = 1 % 1, unit = Other "stick", ingredientName = "butter", attribute = ""}
