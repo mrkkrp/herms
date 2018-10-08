@@ -81,5 +81,4 @@ subtractIngredient x ys =
 
 -- | Subtract each ingredient in @xs@ from those in @ys@ using @subtractIngredient@
 subtractIngredients :: [Ingredient] -> [Ingredient] -> [Ingredient]
-subtractIngredients xs ys =
-  foldl' (\acc x -> subtractIngredient x acc) ys xs
+subtractIngredients = flip $ foldl' (flip subtractIngredient)
