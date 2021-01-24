@@ -1,0 +1,15 @@
+name: Format with Ormolu
+on:
+  - push
+  - pull_request
+jobs:
+  linux:
+    name: ormolu
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: mrkkrp/ormolu-action@v1
+        with:
+          pattern: |
+            app/**/*.hs
+            src/**/*.hs
+            test/**/*.hs
