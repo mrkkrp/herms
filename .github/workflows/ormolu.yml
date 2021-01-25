@@ -7,7 +7,7 @@ jobs:
     name: ormolu
     runs-on: ubuntu-18.04
     steps:
-      - uses: mrkkrp/ormolu-action@v1
+      - uses: mrkkrp/ormolu-action@debug
         with:
           pattern: |
             app/**/*.hs
