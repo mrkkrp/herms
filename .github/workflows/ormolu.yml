@@ -7,6 +7,7 @@ jobs:
     name: ormolu
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2.3.4
       - uses: mrkkrp/ormolu-action@debug
         # with:
         #   pattern: |
