@@ -8,8 +8,8 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - uses: mrkkrp/ormolu-action@debug
-        with:
-          pattern: |
-            app/**/*.hs
-            src/**/*.hs
-            test/**/*.hs
+        # with:
+        #   pattern: |
+        #     app/**/*.hs
+        #     src/**/*.hs
+        #     test/**/*.hs
